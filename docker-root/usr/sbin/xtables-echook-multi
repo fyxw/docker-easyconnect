@@ -18,6 +18,16 @@ case "$name" in
 		sed -E 's/ -j DNAT --to-destination 127.0.0.1:4440$/ -j REDIRECT --to-ports 4440/' | "$xtables_multi" iptables-restore "$@"
 		exit $?
 		;;
+  ip6tables | ip6tables-legacy | ip6tables-nft )
+		[ "$*" = "-t filter -A SANGFOR_VIRTUAL -j DROP" ] && exit 0
+		subcommand=ip6tables
+		;;
+	ip6tables-save | ip6tables-nft-save | ip6tables-legacy-save )
+		subcommand=ip6tables-save
+		;;
+	ip6tables-restore | ip6tables-nft-restore | ip6tables-legacy-restore )
+		subcommand=ip6tables-restore
+		;;
 	* )
 		echo Unknown subcommand "$name"! >&2
 		exit 1
