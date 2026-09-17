@@ -2,7 +2,7 @@
 # 设置策略路由使宿主机外的机器能够访问容器提供的服务
 ## 将路由表 main 备份到路由表 2
 (
-ip route flush table 2
+ip route flush table 2 2>/dev/null || true
 IFS="
 "
 for i in $(ip route show); do IFS=' '; ip route add $i table 2 ; done

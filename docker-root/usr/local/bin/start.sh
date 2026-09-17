@@ -1,7 +1,8 @@
 #!/bin/bash
+# 其他脚本依赖vpn-config.sh定义的变量
+eval "$(vpn-config.sh)"
 eval "$(detect-iptables.sh)"
 eval "$(detect-route.sh)"
-eval "$(vpn-config.sh)"
 
 forward_ports() {
 	if [ -n "$FORWARD" ]; then
@@ -142,6 +143,36 @@ init_vpn_config() {
 		}
 		## 容器退出时将配置文件同步回 /root/conf。感谢 @Einskai 的点子
 		trap "sync_ec2volume; exit;" SIGINT SIGQUIT SIGSTOP SIGTSTP SIGTERM
+  elif [ "ATRUST" = "$_VPN_TYPE" ]; then
+		# /usr/share/sangfor/.aTrust/database
+		# /usr/share/sangfor/.aTrust/iddbase
+		# /usr/share/sangfor/.aTrust/Cookies.txt
+		# /usr/share/sangfor/.aTrust/TunnelSharedConfig.db
+		# /usr/share/sangfor/.aTrust/TunnelSharedConfig.db.crc
+		# /usr/share/sangfor/.aTrust/.soft 存储持久化的UUID
+		#
+		for dir_name in database iddbase .soft; do
+			if [ -d "~/atrust/$dir_name" ]; then
+				rm -rf "/usr/share/sangfor/.aTrust/$dir_name"
+				cp -rp "~/atrust/$dir_name" "/usr/share/sangfor/.aTrust/$dir_name"
+			fi
+		done
+		for file in Cookies.txt TunnelSharedConfig.db{,crc}; do
+			if [ -f "~/atrust/$file" ]; then
+				rm -rf "/usr/share/sangfor/.aTrust/$file"
+				cp -rp "~/atrust/$file" "/usr/share/sangfor/.aTrust/$file"
+			fi
+		done
+		sync_atrust_data() {
+			cd /usr/share/sangfor/.aTrust/
+			rm -rf ~/atrust
+			mkdir -p ~/atrust
+			for file in database iddbase .soft Cookies.txt TunnelSharedConfig.db{,crc}; do
+				[ -e ./"$file" ] && cp -rp "$file" "~/atrust/$file"
+			done
+		}
+		trap "sync_atrust_data; exit;" SIGINT SIGQUIT SIGSTOP SIGTSTP SIGTERM
+
 	else
 		trap "exit;" SIGINT SIGQUIT SIGSTOP SIGTSTP SIGTERM
 	fi
@@ -198,8 +229,13 @@ done
 
 ulimit -n 1048576 # https://github.com/Hagb/docker-easyconnect/issues/245 @rikaunite
 forward_ports &
-start_danted &
-start_tinyproxy &
+# 参考doc/usage.md 实现NODANTED开关
+if [ -z "$NODANTED" ]; then
+	start_danted &
+fi
+if [ -z "$NOTINYPROXY" ]; then
+	start_tinyproxy &
+fi
 config_vpn_iptables &
 force_open_ports &
 keep_pinging &
