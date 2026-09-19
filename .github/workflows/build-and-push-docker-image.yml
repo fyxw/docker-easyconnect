@@ -1,13 +1,65 @@
 name: Build And Push Docker Image
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      atrust_image_name:
+        description: 'Name of the atrust image to push'
+        required: true
+        default: 'docker-atrust'
+
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/build-and-push-docker-image
+    - uses: actions/checkout@v7
+    - name: Configure Podman to use docker.io
+      run: |
+        mkdir -p ~/.config/containers
+        cat > ~/.config/containers/registries.conf <<'EOF'
+        unqualified-search-registries = ["docker.io"]
+        short-name-mode = "permissive"
+        EOF
+
+    - name: Build Container image
+      id: build-image
+      shell: bash
+      run: |
+        to-tag() {
+          tag="$( IFS=-; printf %s "$*"; )"
+          if [ -n "$tag" ]; then
+            printf %s "$tag"
+          else
+            echo latest
+          fi
+        }
+        container-build() {
+          podman build --build-arg BUILD_ENV=actions "$@"
+        }
+        branch="$(git branch --show-current)"
+        case "$branch" in
+          master | main) prefix= ;;
+          develop) prefix=dev ;;
+          *) prefix="$branch" ;;
+        esac
+        # sudo apt-get update
+        # sudo apt-get -y install binfmt-support qemu-user-static
+        if [ -e build-args/atrust-amd64.txt ]; then
+          container-build --platform "linux/amd64" -t hagb/docker-easyconnect:build $(cat build-args/atrust-amd64.txt) -f Dockerfile.build .
+          container-build --platform "linux/amd64" -t ${{ inputs.atrust_image_name }}:$(to-tag $prefix amd64) $(cat build-args/atrust-amd64.txt) -f Dockerfile .
+          container-build --platform "linux/amd64" -t ${{ inputs.atrust_image_name }}:$(to-tag $prefix vncless amd64) $(cat build-args/atrust-amd64.txt) -f Dockerfile.vncless .
+        fi
+
+        podman image rm hagb/docker-easyconnect:build
+        echo "tags=$(to-tag $prefix amd64) $(to-tag $prefix vncless amd64)" >> "$GITHUB_OUTPUT"
+
+    - name: Push image to ghcr.io
+      id: push-image
+      uses: redhat-actions/push-to-registry@v3
       with:
-        registry_username: ${{secrets.DOCKERHUB_USERNAME}}
-        registry_password: ${{secrets.DOCKERHUB_TOKEN}}
+        image: ${{ inputs.atrust_image_name }}
+        tags: ${{ steps.build-image.outputs.tags }}
+        registry: ghcr.io/${{ github.repository_owner }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
