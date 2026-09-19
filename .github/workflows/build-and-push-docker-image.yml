@@ -34,8 +34,9 @@ jobs:
             echo latest
           fi
         }
+        export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
         container-build() {
-          podman build --build-arg BUILD_ENV=actions "$@"
+          podman build --timestamp=${SOURCE_DATE_EPOCH} --build-arg BUILD_ENV=actions "$@"
         }
         branch="$(git branch --show-current)"
         case "$branch" in
