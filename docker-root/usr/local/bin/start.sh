@@ -152,15 +152,15 @@ init_vpn_config() {
 		# /usr/share/sangfor/.aTrust/.soft 存储持久化的UUID
 		#
 		for dir_name in database iddbase .soft; do
-			if [ -d "~/atrust/$dir_name" ]; then
+			if [ -d ~/atrust/"$dir_name" ]; then
 				rm -rf "/usr/share/sangfor/.aTrust/$dir_name"
-				cp -rp "~/atrust/$dir_name" "/usr/share/sangfor/.aTrust/$dir_name"
+				cp -rp ~/atrust/"$dir_name" "/usr/share/sangfor/.aTrust/$dir_name"
 			fi
 		done
 		for file in Cookies.txt TunnelSharedConfig.db{,crc}; do
-			if [ -f "~/atrust/$file" ]; then
+			if [ -f ~/atrust/"$file" ]; then
 				rm -rf "/usr/share/sangfor/.aTrust/$file"
-				cp -rp "~/atrust/$file" "/usr/share/sangfor/.aTrust/$file"
+				cp -rp ~/atrust/"$file" "/usr/share/sangfor/.aTrust/$file"
 			fi
 		done
 		sync_atrust_data() {
@@ -168,7 +168,7 @@ init_vpn_config() {
 			rm -rf ~/atrust
 			mkdir -p ~/atrust
 			for file in database iddbase .soft Cookies.txt TunnelSharedConfig.db{,crc}; do
-				[ -e ./"$file" ] && cp -rp "$file" "~/atrust/$file"
+				[ -e "$file" ] && cp -rp "$file" ~/atrust/"$file"
 			done
 		}
 		trap "sync_atrust_data; exit;" SIGINT SIGQUIT SIGSTOP SIGTSTP SIGTERM
