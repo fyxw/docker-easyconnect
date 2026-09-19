@@ -14,8 +14,8 @@ Pin: release n=trixie
 Pin-Priority: 990" > /etc/apt/preferences.d/qemu &&
 echo "deb $MIRROR_URL trixie main
 deb $MIRROR_URL $VERSION_CODENAME main
-deb http://snapshot.debian.org/archive/debian-security/20260731T213502Z $VERSION_CODENAME-security main
+deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/20260731T213502Z $VERSION_CODENAME-security main
 deb $MIRROR_URL bullseye main
-deb http://snapshot.debian.org/archive/debian-security/20260731T213502Z bullseye-security main
+deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/20260731T213502Z bullseye-security main
 " > /etc/apt/sources.list &&
 rm -rf /etc/apt/sources.list.d
