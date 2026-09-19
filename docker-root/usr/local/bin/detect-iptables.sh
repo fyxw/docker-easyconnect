@@ -17,5 +17,9 @@ for exec in /usr/sbin/iptables{-nft,-legacy,}{-save,-restore,}; do
 	ln -fs /usr/sbin/xtables-echook-multi "$exec"
 done
 
+for exec in /usr/sbin/ip6tables{-nft,-legacy,}{-save,-restore,}; do
+	ln -fs /usr/sbin/xtables-echook-multi "$exec"
+done
+
 echo "export ECHACK_NOWARN=1"
 
